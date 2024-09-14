@@ -11,7 +11,7 @@ type Response struct {
 	LastResponse string
 }
 
-type TenantServer struct { // actual server
+type Server struct { // actual server
 	ServerName      string `json:"server_name"`
 	ServerIP        string `json:"ip"`
 	ServerPort      string `json:"port"`
@@ -38,6 +38,6 @@ type VIP struct { //lbvs + csvs
 	VipServiceType string // SSL, SSL_BRIDGE
 	ADCIP          string // IP of the box
 	VipMonitors    []SGMonitor
-	VipServers     []TenantServer
+	VipServers     []Server
 	BoundCertkeys  []VipCertkey
 }

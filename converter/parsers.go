@@ -32,7 +32,6 @@ func parseServer(line string) TenantServer {
 }
 
 func handleFTPLBVS(parts []string, method, nsIP string) *VIP {
-	fmt.Println("handling: ", parts)
 	return &VIP{
 		VipName:        parts[3],
 		VipServiceType: "FTP",
@@ -44,8 +43,8 @@ func handleFTPLBVS(parts []string, method, nsIP string) *VIP {
 }
 
 func parseLBVS(line, nsIP string) *VIP {
-	// Example line: "add lb vserver vserver SSL        ip port -persistenceType persistenceType -timeout 0 -lbMethod method -cookieName cookie -cltTimeout cltTimeout -downStateFlush downStateFlush -devno 179077120"
-	// Example line: "add lb vserver vserver SSL_BRIDGE ip port -persistenceType persistenceType            -lbMethod method                    -cltTimeout cltTimeout                                -devno 179175424"
+	// Example line: "add lb vserver vserver SSL        ip port -persistenceType persistenceType -timeout 0 -lbMethod method -cookieName cookie -cltTimeout cltTimeout -downStateFlush downStateFlush -devno ########"
+	// Example line: "add lb vserver vserver SSL_BRIDGE ip port -persistenceType persistenceType            -lbMethod method                    -cltTimeout cltTimeout                                -devno ########"
 	var method string
 	parts := strings.Fields(line)
 
