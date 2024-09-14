@@ -14,17 +14,17 @@ func parseNSConfig(line string) (string, error) {
 	return "", fmt.Errorf("IP not found in line: %v", line)
 }
 
-func parseServer(line string) TenantServer {
+func parseServer(line string) Server {
 	// Example line: "add server server ip port"
 	parts := strings.Fields(line)
 	if len(parts) == 5 {
-		return TenantServer{
+		return Server{
 			ServerName: parts[2],
 			ServerIP:   parts[3],
 			ServerPort: parts[4],
 		}
 	} else {
-		return TenantServer{
+		return Server{
 			ServerName: parts[2],
 			ServerIP:   parts[3],
 		}
@@ -87,7 +87,7 @@ var config map[string]*VIP = make(map[string]*VIP)
 
 func ParseNetScalerConfig(lines []string) map[string]*VIP {
 
-	servers := make(map[string]TenantServer)
+	servers := make(map[string]Server)
 	// serviceGroups := make(map[string]any)
 	var nsIP string
 	for _, line := range lines {
