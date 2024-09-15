@@ -15,20 +15,14 @@ func parseNSConfig(line string) (string, error) {
 }
 
 func parseServer(line string) Server {
-	// Example line: "add server server ip port"
+	// Example line: "add server server ip"
 	parts := strings.Fields(line)
-	if len(parts) == 5 {
-		return Server{
-			ServerName: parts[2],
-			ServerIP:   parts[3],
-			ServerPort: parts[4],
-		}
-	} else {
-		return Server{
-			ServerName: parts[2],
-			ServerIP:   parts[3],
-		}
+
+	return Server{
+		ServerName: parts[2],
+		ServerIP:   parts[3],
 	}
+
 }
 
 func parseSG(line string) ServiceGroup {
@@ -83,6 +77,10 @@ func parseBindLBVserver(line string) {
 	parts := strings.Fields(line)
 	if len(parts) == 5 {
 		if _, ok := serviceGroups[parts[4]]; ok {
+			port := config[parts[3]].VipPort
+			for i := range serviceGroups[parts[4]].Servers {
+				serviceGroups[parts[4]].Servers[i].ServerPort = port
+			}
 			config[parts[3]].VipServers = serviceGroups[parts[4]].Servers
 			config[parts[3]].VipMonitors = serviceGroups[parts[4]].Moniors
 		}
