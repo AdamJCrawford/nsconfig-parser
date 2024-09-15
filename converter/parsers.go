@@ -31,6 +31,16 @@ func parseServer(line string) Server {
 	}
 }
 
+func parseSG(line string) ServiceGroup {
+	// Example line: "add serviceGroup serviceGroup HTTP -maxClient # -maxReq # -cip DISABLED X-Forwarded-For -usip NO  -useproxyport NO  -cltTimeout # -svrTimeout # -CKA NO  -TCPB YES -CMP NO  -downStateFlush DISABLED -appflowLog DISABLED -devno ########"
+	// Example line: "add serviceGroup serviceGroup SSL  -maxClient # -maxReq # -cip ENABLED  X-Forwarded-For -usip YES -useproxyport YES -cltTimeout # -svrTimeout # -CKA YES -TCPB NO  -CMP YES -downStateFlush ENABLED
+	//						-tcpProfileName nstcp_large_buffer_default_profile -httpProfileName nshttp_profile_with_websocket -appflowLog ENABLED  -devno ########"
+	parts := strings.Fields(line)
+	return ServiceGroup{
+		Name: parts[2],
+	}
+}
+
 func handleFTPLBVS(parts []string, method, nsIP string) *VIP {
 	return &VIP{
 		VipName:        parts[3],
@@ -68,6 +78,35 @@ func parseLBVS(line, nsIP string) *VIP {
 	}
 }
 
+func parseBindLBVserver(line string) {
+	// Example line: "bind lb vserver LBVS SG"
+	parts := strings.Fields(line)
+	if len(parts) == 5 {
+		if _, ok := serviceGroups[parts[4]]; ok {
+			config[parts[3]].VipServers = serviceGroups[parts[4]].Servers
+			config[parts[3]].VipMonitors = serviceGroups[parts[4]].Moniors
+		}
+	}
+}
+
+func parseBindServiceGroup(line string) {
+	// Example line: bind serviceGroup SG server port      -devno ########"
+	// Example line: bind serviceGroup SG -monitorName Mon -devno ########"
+	parts := strings.Fields(line)
+	if server, ok := servers[parts[3]]; ok {
+		if serviceGroups[parts[2]].Servers == nil {
+			serviceGroups[parts[2]].Servers = []Server{server}
+		} else {
+			serviceGroups[parts[2]].Servers = append(serviceGroups[parts[2]].Servers, server)
+		}
+	}
+	if idx := slices.Index(parts, "-monitorName"); idx != -1 {
+		serviceGroups[parts[2]].Moniors = append(serviceGroups[parts[2]].Moniors, SGMonitor{
+			MonitorName: parts[idx+1],
+		})
+	}
+}
+
 func parseSSL(line string) {
 	// Example line: "bind ssl vserver vserver -certkeyName cert"
 	// Example line: "bind ssl vserver vserver -certkeyName cert -SNICert"
@@ -84,12 +123,12 @@ func parseSSL(line string) {
 }
 
 var config map[string]*VIP = make(map[string]*VIP)
+var serviceGroups map[string]*ServiceGroup = make(map[string]*ServiceGroup)
+var servers map[string]Server = make(map[string]Server)
 
 func ParseNetScalerConfig(lines []string) map[string]*VIP {
-
-	servers := make(map[string]Server)
-	// serviceGroups := make(map[string]any)
 	var nsIP string
+	var todo []string
 	for _, line := range lines {
 		if strings.HasPrefix(line, "set ns config") {
 			tmpNSIP, err := parseNSConfig(line)
@@ -97,15 +136,25 @@ func ParseNetScalerConfig(lines []string) map[string]*VIP {
 				panic("IP address of netscaler not found")
 			}
 			nsIP = tmpNSIP
+		} else if strings.HasPrefix(line, "add serviceGroup") {
+			serviceGroup := parseSG(line)
+			serviceGroups[serviceGroup.Name] = &serviceGroup
 		} else if strings.HasPrefix(line, "add server") {
 			server := parseServer(line)
 			servers[server.ServerName] = server
 		} else if strings.HasPrefix(line, "add lb vserver") {
 			lbvs := parseLBVS(line, nsIP)
 			config[lbvs.VipName] = lbvs
+		} else if strings.HasPrefix(line, "bind lb vserver") {
+			todo = append(todo, line)
+		} else if strings.HasPrefix(line, "bind serviceGroup") {
+			parseBindServiceGroup(line)
 		} else if strings.HasPrefix(line, "bind ssl vserver") {
 			parseSSL(line)
 		}
+	}
+	for _, line := range todo {
+		parseBindLBVserver(line)
 	}
 	return config
 }

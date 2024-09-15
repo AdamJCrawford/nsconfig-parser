@@ -11,6 +11,12 @@ type Response struct {
 	LastResponse string
 }
 
+type ServiceGroup struct {
+	Name    string
+	Servers []Server
+	Moniors []SGMonitor
+}
+
 type Server struct { // actual server
 	ServerName      string `json:"server_name"`
 	ServerIP        string `json:"ip"`
